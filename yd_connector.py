@@ -19,6 +19,18 @@ def timeit(func):
         return result
     return wrapper
 
+def text_transform(text_to_modify) -> list[str]:
+    new_text = []
+    for text in text_to_modify:
+        if not text:
+            continue
+        text = text.lower()
+        while '  ' in text:
+            text = text.replace('  ', ' ')
+        if text not in new_text:
+            new_text.append(text)
+    return new_text
+
 class YDConnector:
     """
     Класс для базовых методов работы с пользовательской папкой на Яндекс-диске.
@@ -26,7 +38,7 @@ class YDConnector:
             delete_folder - удаление папки;
             upload_files - загрузка файлов в папку.
     """
-    text_lines = list(set(config['Cat_Set']['text'].splitlines()))  # Через Set - для удаления дублей фраз.
+    text_lines = text_transform(config['Cat_Set']['text'].splitlines())
     max_num_of_files = len(text_lines)
     pause_to_check = float(config['Settings']['pause_to_check'])
 
