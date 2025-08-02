@@ -67,7 +67,6 @@ class YDConnector:
 
     @timeit
     def upload_files(self, number_of_files) -> tuple[int, float]:
-        json_data = []
         number_of_files = min(number_of_files, YDConnector.max_num_of_files)
         YDConnector.text_lines = YDConnector.text_lines[:number_of_files]
         cat_params = {
@@ -78,10 +77,8 @@ class YDConnector:
             'fontSize': f'{config['Cat_Set']['font_size']}',
             }
         pbar = tqdm(total=number_of_files, file=sys.stdout, desc='Копирование')
-                  #  bar_format='{desc}: {percentage:3.0f}%|{bar}| {elapsed}<{remaining}{postfix}')
         all_file_names = []  # Список имен файлов (без расширений) для динамического поиска дублей.
         names_counter = 1  # Счетчик в имя файла для первого дубля.
-        total_size = 0  # Общий размер скопированных файлов.
         for text in YDConnector.text_lines:
             file_name = re.sub(r'[^\w\s]', '', text)
             file_name = file_name.replace(' ', '_').lower()
@@ -102,26 +99,15 @@ class YDConnector:
                                      params={'url': f'{config['Settings']['source_url']}{quote(text)}'
                                                     f'?{urlencode(cat_params)}',
                                              'path': f'{config['Settings']['folder_name']}/{file_name}'})
-            self._update_status(response)
             if not self._update_status(response):
                 break
             if self.status_code == 202:
                 if not self._asinc_wait(response):
                     print(self.status_code, self.status_message)
                     break
-            response = requests.get(self.base_url,
-                                    headers=self.headers,
-                                    params={'path': f'{config['Settings']['folder_name']}/{file_name}',
-                                            'fields': 'size,created'})
-            file_size = response.json()['size']
-            json_data.append({'name': file_name,
-                              'size': file_size,
-                              'time': response.json()['created']})
-            total_size += file_size
             pbar.update(1)
+        number_of_files, total_size = self._process_files_info()
         pbar.set_postfix_str('Завершено')
-        with open('data.json', 'w', encoding="utf-8") as f:
-            json.dump(json_data, f, indent=4, ensure_ascii=False)
         return number_of_files, total_size
 
     def _update_status(self, resp) -> bool:
@@ -147,3 +133,13 @@ class YDConnector:
                 self.status_code = response.status_code
                 self.status_message = status
                 return True if status == 'success' else False
+
+    def _process_files_info(self) -> tuple[int, float]:
+        response = requests.get(self.base_url,
+                                headers=self.headers,
+                                params={'path': f'{config['Settings']['folder_name']}',
+                                        'fields': '_embedded.items.name,_embedded.items.size,_embedded.items.created'})
+        json_data = response.json()['_embedded']['items']
+        with open('data.json', 'w', encoding="utf-8") as f:
+            json.dump(json_data, f, indent=4, ensure_ascii=False)
+        return len(json_data), sum(item['size'] for item in json_data)
