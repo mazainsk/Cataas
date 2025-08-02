@@ -3,8 +3,20 @@
 """
 
 from yd_connector import YDConnector
+import logging
+
+
 
 def main():
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='log.txt',
+                        encoding='utf-8')
+
+    logging.debug('Это сообщение для отладки')
+    logging.info('Информационное сообщение')
+    logging.warning('Предупреждение')
+    logging.error('Ошибка')
+    logging.critical('Критическая ошибка')
+
     print('Копирование фотографий кошек с сайта https://cataas.com/ (Cat as a service) в папку на Яндекс-диске.')
     disc_connector = YDConnector()
     disc_connector.create_folder()

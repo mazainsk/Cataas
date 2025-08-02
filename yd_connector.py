@@ -106,9 +106,8 @@ class YDConnector:
                     print(self.status_code, self.status_message)
                     break
             pbar.update(1)
-        number_of_files, total_size = self._process_files_info()
         pbar.set_postfix_str('Завершено')
-        return number_of_files, total_size
+        return self._process_files_info()
 
     def _update_status(self, resp) -> bool:
         self.status_code = resp.status_code
